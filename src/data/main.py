@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 
-df_columns = ['종목코드', '회사명', '시장구분', '자본총계', '당기순이익(손실)', 'ROE', '전기 ROE', '전전기 ROE', 'EPS']
+df_columns = ['종목코드', '회사명', '시장구분', '업종명', '자본총계', '당기순이익(손실)', 'ROE', '전기 ROE', '전전기 ROE', 'EPS']
 df = pd.DataFrame(columns=df_columns)
 
 '''
@@ -25,7 +25,7 @@ incomestate_2020 = incomestate_2020[incomestate_2020["항목코드"] == "ifrs-fu
 
 
 for index, row in finstate.iterrows():
-    df_name = row[df_columns[:3]]
+    df_name = row[df_columns[:4]]
     df_full_eq = row["당기 1분기말"]
     df_full_pl = incomestate[incomestate['종목코드'] == row['종목코드']].iloc[:, 12]
     if df_full_pl.empty :
@@ -43,9 +43,9 @@ for index, row in finstate.iterrows():
     df_roe = (df_full_pl/df_full_eq)*100
     if df_full_eq < 0 and df_full_pl < 0 :
         df_roe = 0
-    df_name[df_columns[3]] = df_full_eq
-    df_name[df_columns[4]] = df_full_pl
-    df_name[df_columns[5]] = df_roe
+    df_name[df_columns[4]] = df_full_eq
+    df_name[df_columns[5]] = df_full_pl
+    df_name[df_columns[6]] = df_roe
 
     # 2020-4
     df_full_eq = finstate_2020[finstate_2020['종목코드'] == row['종목코드']].iloc[:, 12]
@@ -56,7 +56,7 @@ for index, row in finstate.iterrows():
         if not pd.isna(df_full_eq) and not pd.isna(df_full_pl) :
             df_full_eq = int(df_full_eq.replace(',',''))
             df_full_pl = int(df_full_pl.replace(',',''))
-            df_name[df_columns[6]] = 0 if df_full_eq < 0 and df_full_pl < 0 else (df_full_pl/df_full_eq)*100
+            df_name[df_columns[7]] = 0 if df_full_eq < 0 and df_full_pl < 0 else (df_full_pl/df_full_eq)*100
 
     # 2020-3
     df_full_eq = finstate_2020[finstate_2020['종목코드'] == row['종목코드']].iloc[:, 13]
@@ -68,14 +68,14 @@ for index, row in finstate.iterrows():
             df_full_eq = int(df_full_eq.replace(',',''))
             df_full_pl = int(df_full_pl.replace(',',''))
             if df_full_eq != 0 :
-                df_name[df_columns[7]] = 0 if df_full_eq < 0 and df_full_pl < 0 else (df_full_pl/df_full_eq)*100
+                df_name[df_columns[8]] = 0 if df_full_eq < 0 and df_full_pl < 0 else (df_full_pl/df_full_eq)*100
 
     df_eps = epsstate[epsstate['종목코드'] == row['종목코드']].iloc[:, 12]
     if not df_eps.empty :
         df_eps = df_eps.iloc[0]
         if not pd.isna(df_eps) :
             df_eps = int(df_eps.replace(',',''))
-            df_name[df_columns[8]] = df_eps
+            df_name[df_columns[9]] = df_eps
     df = df.append(df_name, ignore_index=True)
 
 
@@ -90,7 +90,7 @@ for cl in df.columns[1:] :
     column = {}
     column["Header"] = cl
     column["id"] = cl
-    if cl in df_columns[3:] :
+    if cl in df_columns[4:] :
         column["isNumeric"] = True
     column_json.append(column)
 
