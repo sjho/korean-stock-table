@@ -11,7 +11,8 @@ finstate = pd.read_csv('2021/1.tsv', sep='\t')
 finstate = finstate[finstate["항목코드"] == "ifrs-full_Equity"] # 자본총액
 
 incomestate = pd.read_csv('2021/2.tsv', sep='\t')
-epsstate = incomestate[incomestate["항목코드"] == "ifrs-full_BasicEarningsLossPerShare"] # 주당순이익
+epsstate = incomestate[incomestate["항목코드"].str.contains('BasicEarnings')] # 주당순이익
+epsstate = epsstate[pd.notna(epsstate.iloc[:, 12])]
 incomestate = incomestate[incomestate["항목코드"] == "ifrs-full_ProfitLoss"] # 당기순이익(손실)
 
 '''
@@ -28,21 +29,28 @@ for index, row in finstate.iterrows():
     df_name = row[df_columns[:4]]
     df_full_eq = row["당기 1분기말"]
     df_full_pl = incomestate[incomestate['종목코드'] == row['종목코드']].iloc[:, 12]
-    if df_full_pl.empty :
-        continue
-    df_full_pl = df_full_pl.iloc[0]
-    if pd.isna(df_full_eq) :
-        continue
-    if pd.isna(df_full_pl) :
-        df_full_pl = incomestate[incomestate['종목코드'] == row['종목코드']].iloc[:, 13]
+    if not df_full_pl.empty :
         df_full_pl = df_full_pl.iloc[0]
         if pd.isna(df_full_pl) :
-            continue
-    df_full_eq = int(df_full_eq.replace(',',''))
-    df_full_pl = int(df_full_pl.replace(',',''))
-    df_roe = (df_full_pl/df_full_eq)*100
-    if df_full_eq < 0 and df_full_pl < 0 :
-        df_roe = 0
+            df_full_pl = incomestate[incomestate['종목코드'] == row['종목코드']].iloc[:, 13]
+            df_full_pl = df_full_pl.iloc[0]
+            if not pd.isna(df_full_pl) :
+                df_full_pl = int(df_full_pl.replace(',',''))
+        else :
+            df_full_pl = int(df_full_pl.replace(',',''))
+    if not pd.isna(df_full_eq) :
+        df_full_eq = int(df_full_eq.replace(',',''))
+    df_roe = 0
+    if type(df_full_eq) == int and type(df_full_pl) == int :
+        if df_full_eq != 0 :
+            df_roe = (df_full_pl/df_full_eq)*100
+        if df_full_eq < 0 and df_full_pl < 0 :
+            df_roe = 0
+    else :
+        if type(df_full_eq) != int :
+            df_full_eq = 0
+        if type(df_full_pl) != int :
+            df_full_pl = 0
     df_name[df_columns[4]] = df_full_eq
     df_name[df_columns[5]] = df_full_pl
     df_name[df_columns[6]] = df_roe
@@ -69,6 +77,9 @@ for index, row in finstate.iterrows():
             df_full_pl = int(df_full_pl.replace(',',''))
             if df_full_eq != 0 :
                 df_name[df_columns[8]] = 0 if df_full_eq < 0 and df_full_pl < 0 else (df_full_pl/df_full_eq)*100
+    
+    if not df_columns[7] in df_name.keys() :
+        df_name[df_columns[7]] = 0
 
     df_eps = epsstate[epsstate['종목코드'] == row['종목코드']].iloc[:, 12]
     if not df_eps.empty :
@@ -81,7 +92,7 @@ for index, row in finstate.iterrows():
 
 
 df = df.sort_values(by=["ROE"], axis=0, ascending=False)
-df = df.dropna()
+df = df.fillna(0)
 #df = df[(df[df_columns[5]]>5) & (df[df_columns[6]]>5) & (df[df_columns[7]]>5)]
 
 # columns save
